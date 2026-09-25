@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Qué será el bebé?</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #fce4ec 0%, #e3f2fd 100%);
+      padding: 20px;
+      color: #333;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px 20px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      max-width: 450px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #4a4a4a;
+    }
+
+    p.subtitle {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    .buttons-container {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .vote-btn {
+      flex: 1;
+      padding: 15px 10px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .vote-btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-girl {
+      background-color: #f48fb1;
+      color: white;
+      box-shadow: 0 4px 15px rgba(244, 143, 177, 0.4);
+    }
+
+    .btn-boy {
+      background-color: #90caf9;
+      color: white;
+      box-shadow: 0 4px 15px rgba(144, 202, 249, 0.4);
+    }
+
+    .results-container {
+      margin-top: 10px;
+    }
+
+    .progress-bar-container {
+      height: 24px;
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 15px;
+    }
+
+    .progress-girl {
+      height: 100%;
+      background-color: #f48fb1;
+      width: 50%;
+      transition: width 0.5s ease;
+    }
+
+    .progress-boy {
+      height: 100%;
+      background-color: #90caf9;
+      width: 50%;
+      transition: width 0.5s ease;
+    }
+
+    .counts-display {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .count-girl { color: #ec407a; }
+    .count-boy { color: #42a5f5; }
+
+    .user-voted-msg {
+      margin-top: 15px;
+      font-size: 0.9rem;
+      color: #4caf50;
+      font-weight: 500;
+      display: none;
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Configuración oficial de tu proyecto Firebase
+    const firebaseConfig = {
+      apiKey: "AizaSyDa40EMTwQPyh_zDc2kX0WnBkL3CGqmQfQ",
+      authDomain: "revelacion-de-sexo-8940e.firebaseapp.com",
+      databaseURL: "https://revelacion-de-sexo-8940e-default-rtdb.firebaseio.com",
+      projectId: "revelacion-de-sexo-8940e",
+      storageBucket: "revelacion-de-sexo-8940e.firebasestorage.app",
+      messagingSenderId: "960165779154",
+      appId: "1:960165779154:web:c83e4a1de87276782dbf0b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const votesRef = ref(db, 'votos');
+
+    const btnGirl = document.getElementById('btnGirl');
+    const btnBoy = document.getElementById('btnBoy');
+    const progressGirl = document.getElementById('progressGirl');
+    const progressBoy = document.getElementById('progressBoy');
+    const countGirlText = document.getElementById('countGirl');
+    const countBoyText = document.getElementById('countBoy');
+    const userVotedMsg = document.getElementById('userVotedMsg');
+
+    // Escuchar cambios globales en tiempo real
+    onValue(votesRef, (snapshot) => {
+      const data = snapshot.val() || { nina: 0, nino: 0 };
+      const nina = data.nina || 0;
+      const nino = data.nino || 0;
+      const total = nina + nino;
+
+      let pctGirl = 50;
+      let pctBoy = 50;
+
+      if (total > 0) {
+        pctGirl = ((nina / total) * 100).toFixed(1);
+        pctBoy = ((nino / total) * 100).toFixed(1);
+      }
+
+      progressGirl.style.width = ${pctGirl}%;
+      progressBoy.style.width = ${pctBoy}%;
+
+      countGirlText.textContent = 👧 Niña: ${nina} (${pctGirl}%);
+      countBoyText.textContent = 👦 Niño: ${nino} (${pctBoy}%);
+    });
+
+    // Controlar votación
+    function vote(type) {
+      if (localStorage.getItem('baby_voted')) {
+        userVotedMsg.textContent = "¡Ya registraste tu voto anteriormente!";
+        userVotedMsg.style.display = "block";
+        return;
+      }
+
+      const voteTypeRef = ref(db, votos/${type});
+      runTransaction(voteTypeRef, (currentValue) => {
+        return (currentValue || 0) + 1;
+      }).then(() => {
+        localStorage.setItem('baby_voted', type);
+        userVotedMsg.textContent = "¡Gracias por votar!";
+        userVotedMsg.style.display = "block";
+      });
+    }
+
+    btnGirl.addEventListener('click', () => vote('nina'));
+    btnBoy.addEventListener('click', () => vote('nino'));
+
+    if (localStorage.getItem('baby_voted')) {
+      userVotedMsg.textContent = "Ya votaste en esta encuesta.";
+      userVotedMsg.style.display = "block";
+    }
+  </script>
+</head>
+<body>
+
+  <div class="card">
+    <h1>¿Qué crees que será?</h1>
+    <p class="subtitle">¡Vota y descubre la tendencia en tiempo real!</p>
+
+    <div class="buttons-container">
+      <button id="btnGirl" class="vote-btn btn-girl">🎀 NIÑA</button>
+      <button id="btnBoy" class="vote-btn btn-boy">👑 NIÑO</button>
+    </div>
+
+    <div class="results-container">
+      <div class="progress-bar-container">
+        <div id="progressGirl" class="progress-girl"></div>
+        <div id="progressBoy" class="progress-boy"></div>
+      </div>
+
+      <div class="counts-display">
+        <span id="countGirl" class="count-girl">👧 Niña: 0 (50%)</span>
+        <span id="countBoy" class="count-boy">👦 Niño: 0 (50%)</span>
+      </div>
+    </div>
+
+    <div id="userVotedMsg" class="user-voted-msg"></div>
+  </div>
+
+</body>
+</html>
